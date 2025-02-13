@@ -1,2 +1,3 @@
 # xkcd
-Get xkcd in your terminal
+
+Get [xkcd](https://xkcd.com) in your terminal.
