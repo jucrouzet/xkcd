@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"context"
 	"database/sql"
 	"errors"
 	"fmt"
@@ -9,14 +10,15 @@ import (
 	"time"
 
 	// SQLite driver.
-	_ "github.com/glebarez/go-sqlite"
+	_ "modernc.org/sqlite"
 )
 
 // Index is an index instance.
 type Index struct {
-	db     *sql.DB
-	logger *slog.Logger
-	path   string
+	db      *sql.DB
+	logger  *slog.Logger
+	offline bool
+	path    string
 }
 
 // NewIndex creates a new index instance.
@@ -37,6 +39,16 @@ func NewIndex(path string, logger *slog.Logger) (*Index, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to open SQLite database: %w", err)
 	}
+	row := idx.db.QueryRow("SELECT value FROM settings WHERE name='offline' LIMIT 1")
+	if row.Err() != nil {
+		return nil, row.Err()
+	}
+	var offlineVal string
+	if err := row.Scan(&offlineVal); err != nil {
+		return nil, row.Err()
+	}
+	idx.offline = offlineVal == "1"
+	idx.logger = idx.logger.With(slog.Bool("offline", idx.offline))
 	return idx, err
 }
 
@@ -46,7 +58,7 @@ func (i *Index) Initized() bool {
 }
 
 // Init initializes the index.
-func (i *Index) Init(force bool) error {
+func (i *Index) Init(ctx context.Context, force, offline bool) error {
 	if i.db != nil && !force {
 		return errors.New("index is already initialized")
 	}
@@ -58,39 +70,60 @@ func (i *Index) Init(force bool) error {
 			return fmt.Errorf("failed to remove previous SQLite database: %w", err)
 		}
 	}
+	i.offline = offline
 	i.logger.Debug("creating a new SQLite database")
 	db, err := sql.Open("sqlite", i.path)
 	if err != nil {
 		return fmt.Errorf("failed to create a new SQLite database: %w", err)
 	}
-	_, err = db.Exec(`
-create table posts
+	_, err = db.ExecContext(
+		ctx,
+		`create table posts
 (
-    num        INTEGER not null
-        constraint posts_pk
+    num        INTEGER NOT NULL
+        CONSTRAINT posts_pk
             primary key,
-    title      TEXT    not null,
-    image      TEXT    not null,
-    link       TEXT    not null,
-    date       integer not null,
-    alt_text   TEXT    not null,
-    transcript TEXT    not null,
-    news       TEXT    not null,
-    constraint date_check
+    title      TEXT    NOT NULL,
+    image      TEXT    NOT NULL,
+    link       TEXT    NOT NULL,
+    date       INTEGER NOT NULL,
+    alt_text   TEXT    NOT NULL,
+    transcript TEXT    NOT NULL,
+    news       TEXT    NOT NULL,
+	content    BLOB    null,
+
+    CONSTRAINT date_check
         check (date > 0),
-    constraint num_check
+    CONSTRAINT num_check
         check (num > 0)
-)`)
+)`,
+	)
 	if err != nil {
 		return fmt.Errorf("failed to create posts table: %w", err)
 	}
-	_, err = db.Exec("create index posts_content_index on posts (title, alt_text, transcript, news);")
+	_, err = db.ExecContext(ctx, "CREATE INDEX posts_content_index ON posts(title, alt_text, transcript, news);")
 	if err != nil {
 		return fmt.Errorf("failed to create content index: %w", err)
 	}
-	_, err = db.Exec(`create table last_check (date integer not null)`)
+	_, err = db.ExecContext(ctx, "CREATE TABLE last_update (date INTEGER NOT NULL, last_num INTEGER NOT NULL)")
 	if err != nil {
-		return fmt.Errorf("failed to create last_check table: %w", err)
+		return fmt.Errorf("failed to create last_update table: %w", err)
+	}
+	_, err = db.ExecContext(ctx, "CREATE TABLE settings (name TEXT NOT NULL, value TEXT NOT NULL)")
+	if err != nil {
+		return fmt.Errorf("failed to create settings table: %w", err)
+	}
+	offlineVal := "0"
+	if offline {
+		offlineVal = "1"
+	}
+	_, err = db.ExecContext(ctx, "INSERT INTO settings (name, value) VALUES ('offline', ?)", offlineVal)
+	if err != nil {
+		return fmt.Errorf("failed to set offline setting: %w", err)
+	}
+	_, err = db.ExecContext(ctx, "INSERT INTO last_update (date, last_num) VALUES (0, 0)")
+	if err != nil {
+		return fmt.Errorf("failed to set last_update: %w", err)
 	}
 	i.logger.Debug("created all tables")
 	i.db = db
@@ -105,21 +138,22 @@ func (i *Index) Close() error {
 	return nil
 }
 
-// GetLastUpdate retrieves the last update date from the index.
-func (i *Index) GetLastUpdate() (time.Time, error) {
+// GetLastUpdate retrieves the last update date and post number from the index.
+func (i *Index) GetLastUpdate() (time.Time, uint, error) {
 	if i.db == nil {
-		return time.Time{}, nil
+		return time.Time{}, 0, nil
 	}
-	row := i.db.QueryRow("SELECT date FROM last_check LIMIT 1")
+	row := i.db.QueryRow("SELECT date, last_num FROM last_update LIMIT 1")
 	if errors.Is(row.Err(), sql.ErrNoRows) {
-		return time.Time{}, nil
+		return time.Time{}, 0, nil
 	}
 	if row.Err() != nil {
-		return time.Time{}, row.Err()
+		return time.Time{}, 0, row.Err()
 	}
 	var ts int64
-	if err := row.Scan(&ts); err != nil {
-		return time.Time{}, row.Err()
+	var num uint
+	if err := row.Scan(&ts, &num); err != nil {
+		return time.Time{}, 0, row.Err()
 	}
-	return time.Unix(ts, 0), nil
+	return time.Unix(ts, 0), num, nil
 }
