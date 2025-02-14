@@ -52,6 +52,14 @@ var (
 	ErrAPIError = errors.New("xkcd API error")
 )
 
+// NewPost returns a new xkcd API client with the provided options.
+func NewPost(defaultClient HTTPClient, logger *slog.Logger) *Post {
+	return &Post{
+		defaultClient: defaultClient,
+		logger:        logger,
+	}
+}
+
 // GetLatest retrieves the latest post.
 func (c *Client) GetLatest(ctx context.Context, client ...HTTPClient) (*Post, error) {
 	return c.getPost(ctx, "https://xkcd.com/info.0.json", client...)

@@ -49,7 +49,7 @@ If no argument is provided, it defaults to the latest post.`,
 		} else {
 			n, errParse := strconv.ParseUint(args[0], 10, 32)
 			checkErr(errParse, cmd, "invalid post number")
-			post, err = apiClient.GetPost(cmd.Context(), uint(n))
+			post, err = index.Get(cmd.Context(), apiClient, uint(n))
 		}
 		checkErr(err, cmd, "failed to get latest post")
 

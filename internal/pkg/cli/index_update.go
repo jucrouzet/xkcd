@@ -90,54 +90,66 @@ func (i *Index) Update(ctx context.Context, client *xkcd.Client, start, end, wor
 	return nil
 }
 
-func (i *Index) handleUpdate(ctx context.Context, pool pond.Pool, client *xkcd.Client, tx *sql.Tx, num uint, count *uint32) func() error {
+// Execer is an interface for the database's ExecContext method.
+type Execer interface {
+	ExecContext(ctx context.Context, query string, args ...any) (sql.Result, error)
+}
+
+func (i *Index) handleUpdate(ctx context.Context, pool pond.Pool, client *xkcd.Client, tx Execer, num uint, count *uint32) func() error {
 	return func() error {
 		if pool.FailedTasks() > 0 {
 			return nil
 		}
 		log := i.logger.With(slog.Uint64("num", uint64(num)))
-		log.Debug("updating post")
+		log.Debug("getting post")
 		post, err := client.GetPost(ctx, num)
 		if err != nil {
 			log.Warn("failed to get post", slog.String("error", err.Error()))
 			return nil
 		}
-		var data *[]byte
-		if i.offline {
-			rdr, err := post.GetImageContent(ctx)
-			if err != nil {
-				log.Warn("failed to get image content", slog.String("error", err.Error()))
-				return nil
-			}
-			defer rdr.Close()
-			b, err := io.ReadAll(rdr)
-			if err != nil {
-				log.Warn("failed to get image content", slog.String("error", err.Error()))
-				return nil
-			}
-			data = &b
-		}
-		_, err = tx.ExecContext(
-			ctx,
-			`INSERT OR REPLACE INTO posts
-			    (num, title, image, link, date, alt_text, transcript, news, content)
-			VALUES
-			     (?, ?, ?, ?, ?, ?, ?, ?, ?);`,
-			post.Num,
-			post.Title,
-			post.Img,
-			post.Link,
-			post.Date.Unix(),
-			post.Alt,
-			post.Transcript,
-			post.News,
-			data,
-		)
-		if err != nil {
-			return fmt.Errorf("failed to insert or update post: %w", err)
+		if err := i.indexPost(ctx, post, tx, log); err != nil {
+			return err
 		}
 		atomic.AddUint32(count, 1)
-		log.Debug("updated post")
 		return nil
 	}
+}
+
+func (i *Index) indexPost(ctx context.Context, post *xkcd.Post, tx Execer, log *slog.Logger) error {
+	var data *[]byte
+	if i.offline {
+		rdr, err := post.GetImageContent(ctx)
+		if err != nil {
+			log.Warn("failed to get image content", slog.String("error", err.Error()))
+			return nil
+		}
+		defer rdr.Close()
+		b, err := io.ReadAll(rdr)
+		if err != nil {
+			log.Warn("failed to get image content", slog.String("error", err.Error()))
+			return nil
+		}
+		data = &b
+	}
+	_, err := tx.ExecContext(
+		ctx,
+		`INSERT OR REPLACE INTO posts
+			(num, title, image, link, date, alt_text, transcript, news, content)
+		VALUES
+			 (?, ?, ?, ?, ?, ?, ?, ?, ?);`,
+		post.Num,
+		post.Title,
+		post.Img,
+		post.Link,
+		post.Date.Unix(),
+		post.Alt,
+		post.Transcript,
+		post.News,
+		data,
+	)
+	if err != nil {
+		return fmt.Errorf("failed to insert or update post: %w", err)
+	}
+	log.Debug("created post in index")
+	return nil
 }
