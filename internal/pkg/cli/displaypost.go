@@ -8,7 +8,6 @@ import (
 	"image"
 	"io"
 	"log/slog"
-	"net/http"
 	"strings"
 	"time"
 
@@ -25,25 +24,11 @@ func DisplayPostImage(
 	out io.Writer,
 	post *xkcd.Post,
 	d Displayer,
-	logger *slog.Logger,
 ) error {
-	logger = logger.With(slog.String("image_url", post.Img))
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, post.Img, http.NoBody)
+	img, _, err := post.GetImage(ctx)
 	if err != nil {
-		return fmt.Errorf("failed to create request: %w", err)
+		return fmt.Errorf("failed to get image: %w", err)
 	}
-	logger.Debug("fetching image")
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return fmt.Errorf("failed to send request: %w", err)
-	}
-	defer resp.Body.Close()
-	logger.Debug("decoding image")
-	img, _, err := image.Decode(resp.Body)
-	if err != nil {
-		return fmt.Errorf("failed to decode image: %w", err)
-	}
-	logger.Debug("displaying image")
 	return d(out, img)
 }
 
