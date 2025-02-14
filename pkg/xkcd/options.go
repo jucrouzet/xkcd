@@ -6,7 +6,7 @@ import "log/slog"
 type ClientOption func(c *Client)
 
 // WithClient sets the http client for http operations.
-func WithClient(g Getter) ClientOption {
+func WithClient(g HTTPClient) ClientOption {
 	return func(c *Client) {
 		c.getter = g
 	}
