@@ -53,7 +53,7 @@ If no argument is provided, it defaults to the latest post.`,
 			checkErr(cli.DisplayPostInfos(cmd.OutOrStdout(), post, json), cmd, "failed to display post informations")
 		}
 
-		checkErr(cli.DisplayPostImage(cmd.Context(), cmd.OutOrStdout(), post, displayer, logger), cmd, "failed to display post")
+		checkErr(cli.DisplayPostImage(cmd.Context(), cmd.OutOrStdout(), post, displayer), cmd, "failed to display post")
 	},
 }
 
