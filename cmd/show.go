@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"io"
 	"strconv"
 
 	"github.com/spf13/cobra"
@@ -28,12 +29,15 @@ If no argument is provided, it defaults to the latest post.`,
 	},
 	PreRun: func(cmd *cobra.Command, _ []string) {
 		if json {
-			fatal(cmd, "cannot display images in json mode")
+			fatal(cmd, "cannot show images in json mode")
 			return
 		}
-		displayer = cli.GetDisplayer(logger)
-		if displayer == nil {
-			fatal(cmd, "terminal does not support image display")
+		if outIsATTY {
+			displayer = cli.GetDisplayer(logger)
+			if displayer == nil {
+				fatal(cmd, "terminal does not support image display")
+				return
+			}
 			return
 		}
 	},
@@ -50,10 +54,22 @@ If no argument is provided, it defaults to the latest post.`,
 		checkErr(err, cmd, "failed to get latest post")
 
 		if showInfos {
-			checkErr(cli.DisplayPostInfos(cmd.OutOrStdout(), post, json), cmd, "failed to display post informations")
+			if !outIsATTY {
+				fatal(cmd, "showing informations in non-TTY mode is not supported")
+			}
+			checkErr(cli.DisplayPostInfos(cmd.OutOrStdout(), post, false), cmd, "failed to display post informations")
 		}
 
-		checkErr(cli.DisplayPostImage(cmd.Context(), cmd.OutOrStdout(), post, displayer), cmd, "failed to display post")
+		if displayer != nil {
+			checkErr(cli.DisplayPostImage(cmd.Context(), cmd.OutOrStdout(), post, displayer), cmd, "failed to display post")
+			return
+		}
+		data, err := post.GetImageContent(ctx)
+		checkErr(err, cmd, "failed to fetch post image")
+		defer data.Close()
+		outputContentType = "application/octet-stream"
+		_, err = io.Copy(cmd.OutOrStdout(), data)
+		checkErr(err, cmd, "failed to fetch post image")
 	},
 }
 
