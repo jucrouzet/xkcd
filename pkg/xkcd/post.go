@@ -16,29 +16,29 @@ import (
 
 // Post represents a comic post from xkcd.com.
 type Post struct {
-	// Alt is the alternative text for the comic image.
+	// Alt is the alternative text for the post image.
 	Alt string `json:"alt"`
-	// Date is the publication date of the comic.
+	// Date is the publication date of the post.
 	Date time.Time
-	// Day is the day of the month of the publication date of the comic as string.
+	// Day is the day of the month of the publication date of the post as string.
 	Day string `json:"day"`
-	// Img is the URL of the comic image.
+	// Img is the URL of the post image.
 	Img string `json:"img"`
-	// Link is the URL of the comic page.
+	// Link is the URL of the post page.
 	Link string `json:"link"`
-	// Month is the month number of the publication date of the comic as string.
+	// Month is the month number of the publication date of the post as string.
 	Month string `json:"month"`
-	// News is the news text published with the comic.
+	// News is the news text published with the post.
 	News string `json:"news"`
-	// Num is the number of the comic.
+	// Num is the number of the post.
 	Num uint `json:"num"`
-	// SafeTitle is the safe title for the comic.
+	// SafeTitle is the safe title for the post.
 	SafeTitle string `json:"safe_title"`
-	// Title is the title of the comic.
+	// Title is the title of the post.
 	Title string `json:"title"`
-	// Transcript is the transcript for the comic.
+	// Transcript is the transcript for the post.
 	Transcript string `json:"transcript"`
-	// Year is the year of the publication date of the comic as string.
+	// Year is the year of the publication date of the post as string.
 	Year string `json:"year"`
 
 	defaultClient HTTPClient
@@ -52,12 +52,12 @@ var (
 	ErrAPIError = errors.New("xkcd API error")
 )
 
-// GetLatest retrieves the latest comic post.
+// GetLatest retrieves the latest post.
 func (c *Client) GetLatest(ctx context.Context, client ...HTTPClient) (*Post, error) {
 	return c.getPost(ctx, "https://xkcd.com/info.0.json", client...)
 }
 
-// GetPost retrieves the comic post with the given number.
+// GetPost retrieves the post with the given number.
 func (c *Client) GetPost(ctx context.Context, num int, client ...HTTPClient) (*Post, error) {
 	if num <= 0 {
 		return nil, ErrNoSuchPost
@@ -103,7 +103,7 @@ func (c *Client) getPost(ctx context.Context, apiURL string, client ...HTTPClien
 
 func parsePost(post *Post) (*Post, error) {
 	if post.Num == 0 {
-		return nil, fmt.Errorf("%w: comic number is zero", ErrAPIError)
+		return nil, fmt.Errorf("%w: post number is zero", ErrAPIError)
 	}
 	day, err := strconv.Atoi(post.Day)
 	if err == nil && (day < 1 || day > 31) {
@@ -125,12 +125,12 @@ func parsePost(post *Post) (*Post, error) {
 	}
 
 	if err = validateURL(post.Img); err != nil {
-		return nil, fmt.Errorf("%w: comic image URL is invalid: %w", ErrAPIError, err)
+		return nil, fmt.Errorf("%w: post image URL is invalid: %w", ErrAPIError, err)
 	}
 
 	if post.Link != "" {
 		if err = validateURL(post.Link); err != nil {
-			return nil, fmt.Errorf("%w: comic link URL is invalid: %w", ErrAPIError, err)
+			return nil, fmt.Errorf("%w: post link URL is invalid: %w", ErrAPIError, err)
 		}
 	}
 

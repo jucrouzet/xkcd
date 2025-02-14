@@ -38,7 +38,7 @@ var (
 var rootCmd = &cobra.Command{
 	Use:   "xkcd",
 	Short: "xkcd in your terminal",
-	Long:  `Get your daily dose of xkcd comics or search an image, right from the terminal.`,
+	Long:  `Get your daily dose of xkcd comic, search for a post, or browse them, right from the terminal.`,
 	Run: func(cmd *cobra.Command, _ []string) {
 		checkErr(cmd.Help(), cmd)
 		os.Exit(0)

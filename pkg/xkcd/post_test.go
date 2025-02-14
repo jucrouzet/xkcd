@@ -153,14 +153,14 @@ func TestClient_GetPost(t *testing.T) {
 		{
 			name:          "empty struct",
 			preparePost:   func(post *xkcd.Post) { *post = xkcd.Post{} },
-			errorContains: "comic number is zero",
+			errorContains: "post number is zero",
 		},
 		{
 			name: "num is zero",
 			preparePost: func(post *xkcd.Post) {
 				post.Num = 0
 			},
-			errorContains: "comic number is zero",
+			errorContains: "post number is zero",
 		},
 		{
 			name: "invalid day",
@@ -195,35 +195,35 @@ func TestClient_GetPost(t *testing.T) {
 			preparePost: func(post *xkcd.Post) {
 				post.Img = ""
 			},
-			errorContains: "comic image URL is invalid: URL is empty",
+			errorContains: "post image URL is invalid: URL is empty",
 		},
 		{
 			name: "invalid image",
 			preparePost: func(post *xkcd.Post) {
 				post.Img = "http ://lol.com/a"
 			},
-			errorContains: "comic image URL is invalid: invalid syntax",
+			errorContains: "post image URL is invalid: invalid syntax",
 		},
 		{
 			name: "invalid image url scheme",
 			preparePost: func(post *xkcd.Post) {
 				post.Img = "mailto:contact@juliencrouzet.fr"
 			},
-			errorContains: "comic image URL is invalid: unsupported scheme: mailto",
+			errorContains: "post image URL is invalid: unsupported scheme: mailto",
 		},
 		{
 			name: "invalid post link",
 			preparePost: func(post *xkcd.Post) {
 				post.Link = "https:///"
 			},
-			errorContains: "comic link URL is invalid: URL does not have a host",
+			errorContains: "post link URL is invalid: URL does not have a host",
 		},
 		{
 			name: "invalid post link scheme",
 			preparePost: func(post *xkcd.Post) {
 				post.Link = "ssh://lol.com/a"
 			},
-			errorContains: "comic link URL is invalid: unsupported scheme: ssh",
+			errorContains: "post link URL is invalid: unsupported scheme: ssh",
 		},
 	}
 
