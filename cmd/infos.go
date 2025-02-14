@@ -27,9 +27,9 @@ If no argument is provided, it defaults to the latest post.`,
 		if len(args) == 0 || args[0] == "latest" {
 			post, err = apiClient.GetLatest(cmd.Context())
 		} else {
-			n, errParse := strconv.Atoi(args[0])
+			n, errParse := strconv.ParseUint(args[0], 10, 32)
 			checkErr(errParse, cmd, "invalid post number")
-			post, err = apiClient.GetPost(cmd.Context(), n)
+			post, err = apiClient.GetPost(cmd.Context(), uint(n))
 		}
 		checkErr(err, cmd, "failed to get post")
 		checkErr(cli.DisplayPostInfos(cmd.OutOrStdout(), post, json), cmd, "failed to display post informations")

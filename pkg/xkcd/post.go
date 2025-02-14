@@ -58,8 +58,8 @@ func (c *Client) GetLatest(ctx context.Context, client ...HTTPClient) (*Post, er
 }
 
 // GetPost retrieves the post with the given number.
-func (c *Client) GetPost(ctx context.Context, num int, client ...HTTPClient) (*Post, error) {
-	if num <= 0 {
+func (c *Client) GetPost(ctx context.Context, num uint, client ...HTTPClient) (*Post, error) {
+	if num == 0 {
 		return nil, ErrNoSuchPost
 	}
 	return c.getPost(ctx, fmt.Sprintf("https://xkcd.com/%d/info.0.json", num), client...)
