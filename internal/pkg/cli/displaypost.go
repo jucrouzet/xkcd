@@ -12,9 +12,6 @@ import (
 	"strings"
 	"time"
 
-	// Image formats.
-	_ "image/jpeg"
-
 	"github.com/BourgeoisBear/rasterm"
 	"github.com/fatih/color"
 	"github.com/gosuri/uitable"

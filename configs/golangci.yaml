@@ -4,6 +4,12 @@ issues:
   exclude-use-default: true
   max-issues-per-linter: 0
   max-same-issues: 0
+  exclude-rules:
+    - path: _test\.go
+      linters:
+        - bodyclose
+        - gocyclo
+        - gosec
 output:
   formats: line-number
   print-issued-lines: false

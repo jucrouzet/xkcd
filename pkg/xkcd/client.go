@@ -12,5 +12,12 @@ func (c *Client) getClient(given ...HTTPClient) HTTPClient {
 	if len(given) > 0 {
 		return given[0]
 	}
-	return c.getter
+	return c.defaultClient
+}
+
+func (p *Post) getClient(given ...HTTPClient) HTTPClient {
+	if len(given) > 0 {
+		return given[0]
+	}
+	return p.defaultClient
 }

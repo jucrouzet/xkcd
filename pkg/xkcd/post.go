@@ -20,10 +20,14 @@ type Post struct {
 	Alt string `json:"alt"`
 	// Date is the publication date of the comic.
 	Date time.Time
+	// Day is the day of the month of the publication date of the comic as string.
+	Day string `json:"day"`
 	// Img is the URL of the comic image.
 	Img string `json:"img"`
 	// Link is the URL of the comic page.
 	Link string `json:"link"`
+	// Month is the month number of the publication date of the comic as string.
+	Month string `json:"month"`
 	// News is the news text published with the comic.
 	News string `json:"news"`
 	// Num is the number of the comic.
@@ -34,10 +38,11 @@ type Post struct {
 	Title string `json:"title"`
 	// Transcript is the transcript for the comic.
 	Transcript string `json:"transcript"`
+	// Year is the year of the publication date of the comic as string.
+	Year string `json:"year"`
 
-	Day   string `json:"day"`
-	Month string `json:"month"`
-	Year  string `json:"year"`
+	defaultClient HTTPClient
+	logger        *slog.Logger
 }
 
 var (
@@ -91,7 +96,8 @@ func (c *Client) getPost(ctx context.Context, apiURL string, client ...HTTPClien
 	if err != nil {
 		return nil, fmt.Errorf("%w: failed to decode response: %w", ErrAPIError, err)
 	}
-
+	post.defaultClient = c.defaultClient
+	post.logger = logger
 	return parsePost(post)
 }
 
