@@ -124,6 +124,9 @@ func getImageResponse(t testing.TB, imgType string, errorRead error, errorClose 
 	case "png":
 		file = "testdata/image.png"
 		header = "image/png"
+	case "gif":
+		file = "testdata/image.gif"
+		header = "image/gif"
 	case "audio":
 		header = "audio/mpeg"
 	case "bogus":

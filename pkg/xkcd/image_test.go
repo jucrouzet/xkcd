@@ -59,6 +59,27 @@ func TestPost_GetImageContent(t *testing.T) {
 		assert.Len(t, data, 54845, "expected data to be read correctly")
 	})
 
+	t.Run("happy path gif", func(t *testing.T) {
+		imgResp := getImageResponse(t, "gif", nil, nil)
+		defer imgResp.Body.Close()
+		expectedPost, resp := getRandomPost(t, nil, nil)
+		c := getClient(t, func(r *http.Request) (*http.Response, error) {
+			if r.URL.String() == expectedPost.Img {
+				return imgResp, nil
+			}
+			return resp, nil
+		}, nil)
+		p, err := c.GetPost(ctx, 1)
+		require.NoError(t, err, "expected no error while getting post")
+		require.NotNil(t, p, "expected non-nil post")
+		rdr, err := p.GetImageContent(context.Background())
+		require.NoError(t, err, "expected no error while getting image")
+		require.NotNil(t, rdr, "expected non-nil reader")
+		data, err := io.ReadAll(rdr)
+		assert.NoError(t, err, "expected read to not return an error")
+		assert.Len(t, data, 56039, "expected data to be read correctly")
+	})
+
 	t.Run("image url is empty", func(t *testing.T) {
 		_, resp := getRandomPost(t, nil, nil)
 		c := getClient(t, func(_ *http.Request) (*http.Response, error) {
@@ -216,6 +237,37 @@ func TestPost_GetImage(t *testing.T) {
 		require.NotNil(t, img, "expected non-nil image")
 		assert.Equal(t, "png", imgType, "expected image to be decoded correctly")
 		assert.Equal(t, 281, img.Bounds().Dx(), "expected image to be decoded correctly")
+		assert.True(t, closeCalled, "expected close to have been called on image response body")
+	})
+
+	t.Run("happy path gif", func(t *testing.T) {
+		closeCalled := false
+		imgResp := getImageResponse(t, "gif", nil, errors.New("cannot close"))
+		defer imgResp.Body.Close()
+		expectedPost, resp := getRandomPost(t, nil, nil)
+		c := getClient(
+			t,
+			func(r *http.Request) (*http.Response, error) {
+				if r.URL.String() == expectedPost.Img {
+					return imgResp, nil
+				}
+				return resp, nil
+			},
+			func(_ context.Context, record slog.Record) error {
+				if record.Level == slog.LevelWarn && record.Message == "failed to close response body" {
+					closeCalled = true
+				}
+				return nil
+			},
+		)
+		p, err := c.GetPost(ctx, 1)
+		require.NoError(t, err, "expected no error while getting post")
+		require.NotNil(t, p, "expected non-nil post")
+		img, imgType, err := p.GetImage(context.Background())
+		assert.NoError(t, err, "expected no error while getting image")
+		require.NotNil(t, img, "expected non-nil image")
+		assert.Equal(t, "gif", imgType, "expected image to be decoded correctly")
+		assert.Equal(t, 713, img.Bounds().Dx(), "expected image to be decoded correctly")
 		assert.True(t, closeCalled, "expected close to have been called on image response body")
 	})
 
