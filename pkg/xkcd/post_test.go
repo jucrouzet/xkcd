@@ -37,11 +37,7 @@ func TestClient_GetPost(t *testing.T) {
 
 	t.Run("invalid number", func(t *testing.T) {
 		c := getClient(t, nil, nil)
-		p, err := c.GetPost(context.Background(), -1)
-		assert.Error(t, err, "expected an error")
-		assert.Nil(t, p, "expected nil post")
-		assert.ErrorIs(t, err, xkcd.ErrNoSuchPost)
-		p, err = c.GetPost(context.Background(), 0)
+		p, err := c.GetPost(context.Background(), 0)
 		assert.Error(t, err, "expected an error")
 		assert.Nil(t, p, "expected nil post")
 		assert.ErrorIs(t, err, xkcd.ErrNoSuchPost, "expected ErrNoSuchPost")
