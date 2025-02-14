@@ -132,6 +132,8 @@ func parsePost(post *Post) (*Post, error) {
 		if err = validateURL(post.Link); err != nil {
 			return nil, fmt.Errorf("%w: post link URL is invalid: %w", ErrAPIError, err)
 		}
+	} else {
+		post.Link = fmt.Sprintf("https://xkcd.com/%d/", post.Num)
 	}
 
 	post.Date = time.Date(year, time.Month(month), day, 0, 0, 0, 0, time.Local)

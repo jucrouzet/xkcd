@@ -32,9 +32,7 @@ func TestClient_GetPost(t *testing.T) {
 		p, err := c.GetPost(ctx, 1)
 		assert.NoError(t, err, "expected no error")
 		assert.NotNil(t, p, "expected non-nil post")
-		if !cmp.Equal(expected, p, cmpopts.IgnoreFields(xkcd.Post{}, "defaultClient", "logger")) {
-			t.Errorf("expected post to be correctly parsed: %s", cmp.Diff(expected, p, cmpopts.IgnoreFields(xkcd.Post{}, "defaultClient", "logger")))
-		}
+		checkPostAsExpected(t, expected, p)
 	})
 
 	t.Run("invalid number", func(t *testing.T) {
@@ -93,9 +91,7 @@ func TestClient_GetPost(t *testing.T) {
 		p, err := c.GetPost(context.Background(), 1)
 		assert.NoError(t, err, "expected no error")
 		assert.NotNil(t, p, "expected non-nil post")
-		if !cmp.Equal(expected, p, cmpopts.IgnoreFields(xkcd.Post{}, "defaultClient", "logger")) {
-			t.Errorf("expected post to be correctly parsed: %s", cmp.Diff(expected, p, cmpopts.IgnoreFields(xkcd.Post{}, "defaultClient", "logger")))
-		}
+		checkPostAsExpected(t, expected, p)
 		assert.True(t, closeLogged, "expected logger to be called for a close error")
 	})
 
@@ -249,5 +245,19 @@ func TestClient_GetPost(t *testing.T) {
 				assert.ErrorContains(t, err, test.errorContains, "expected error to be valid")
 			},
 		)
+	}
+}
+
+func checkPostAsExpected(t *testing.T, expected, p *xkcd.Post) {
+	t.Helper()
+	if !cmp.Equal(expected, p, cmpopts.IgnoreFields(xkcd.Post{}, "Link", "defaultClient", "logger")) {
+		msg := fmt.Sprintf(
+			"expected post to be correctly parsed: %s",
+			cmp.Diff(expected, p, cmpopts.IgnoreFields(xkcd.Post{}, "Link", "defaultClient", "logger")),
+		)
+		assert.Fail(t, msg)
+	}
+	if expected.Link != "" {
+		assert.Equal(t, expected.Link, p.Link, "expected given link to have been kept")
 	}
 }
