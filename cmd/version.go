@@ -17,9 +17,9 @@ var versionCmd = &cobra.Command{
 	Short: "get software version",
 	Run: func(cmd *cobra.Command, _ []string) {
 		if versionCmdFull {
-			fmt.Fprintf(cmd.OutOrStderr(), "%s-%s\n", VERSION, BUILD)
+			fmt.Fprintf(cmd.OutOrStderr(), "%s-%s\n", version, build)
 		} else {
-			fmt.Fprintf(cmd.OutOrStderr(), "%s\n", VERSION)
+			fmt.Fprintf(cmd.OutOrStderr(), "%s\n", version)
 		}
 		os.Exit(0)
 	},
