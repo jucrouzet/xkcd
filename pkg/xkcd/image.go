@@ -13,6 +13,8 @@ import (
 	_ "image/jpeg"
 	// PNG image format support.
 	_ "image/png"
+	// GIF image format support.
+	_ "image/gif"
 )
 
 const (
@@ -36,7 +38,7 @@ func (p *Post) GetImageContent(ctx context.Context, client ...HTTPClient) (io.Re
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("%w: unexpected status code: %d", ErrAPIError, resp.StatusCode)
 	}
-	if !slices.Contains([]string{"image/jpeg", "image/png"}, resp.Header.Get(contentTypeHeader)) {
+	if !slices.Contains([]string{"image/jpeg", "image/png", "image/gif"}, resp.Header.Get(contentTypeHeader)) {
 		return nil, fmt.Errorf("%w: unexpected or undefined content-type: %v", ErrAPIError, resp.Header.Get(contentTypeHeader))
 	}
 	p.logger.Debug("got image response")
