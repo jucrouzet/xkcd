@@ -8,6 +8,7 @@ import (
 	"log/slog"
 	"math/rand/v2"
 	"net/http"
+	"os"
 	"strings"
 	"testing"
 	"time"
@@ -101,11 +102,55 @@ func getRandomPost(t testing.TB, errorRead error, errorClose error) (*xkcd.Post,
 
 func randomEmpty(t testing.TB, v string) string {
 	t.Helper()
-	//nolint:gosec // It's safe here to use the weak random number generator.
 	if rand.IntN(100) < 75 {
 		return v
 	}
 	return ""
+}
+
+func getImageResponse(t testing.TB, imgType string, errorRead error, errorClose error) *http.Response {
+	t.Helper()
+	var file string
+	var header string
+	resp := &http.Response{
+		Body:       io.NopCloser(http.NoBody),
+		Status:     "OK",
+		StatusCode: http.StatusOK,
+	}
+	switch imgType {
+	case "jpg":
+		file = "testdata/image.jpg"
+		header = "image/jpeg"
+	case "png":
+		file = "testdata/image.png"
+		header = "image/png"
+	case "audio":
+		header = "audio/mpeg"
+	case "bogus":
+		resp.Body = io.NopCloser(strings.NewReader("bogus data"))
+		header = "image/jpeg"
+	case "error":
+		header = "image/jpeg"
+		resp.Status = "Internal Server Error"
+		resp.StatusCode = http.StatusInternalServerError
+	default:
+		t.Fatalf("Unsupported image type: %s", imgType)
+	}
+	if file != "" {
+		f, err := os.Open(file)
+		require.NoError(t, err)
+		rdr := &fakeReader{
+			data:       f,
+			errorClose: errorClose,
+			errorRead:  errorRead,
+			t:          t,
+		}
+		resp.Body = rdr
+	}
+	hdr := http.Header{}
+	hdr.Set("content-type", header)
+	resp.Header = hdr
+	return resp
 }
 
 type fakeReader struct {

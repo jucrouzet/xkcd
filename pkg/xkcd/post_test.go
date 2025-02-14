@@ -12,6 +12,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -22,7 +24,6 @@ func TestClient_GetPost(t *testing.T) {
 	t.Run("happy path", func(t *testing.T) {
 		//nolint:revive,staticcheck // It's safe here to use string key
 		ctx := context.WithValue(context.Background(), "test-key", "test-value")
-		//nolint:bodyclose // We can ignore close
 		expected, resp := getRandomPost(t, nil, nil)
 		c := getClient(t, func(r *http.Request) (*http.Response, error) {
 			require.Equal(t, ctx, r.Context(), "given context should used for request")
@@ -31,7 +32,9 @@ func TestClient_GetPost(t *testing.T) {
 		p, err := c.GetPost(ctx, 1)
 		assert.NoError(t, err, "expected no error")
 		assert.NotNil(t, p, "expected non-nil post")
-		assert.EqualValues(t, expected, p, "expected post to be correctly parsed")
+		if !cmp.Equal(expected, p, cmpopts.IgnoreFields(xkcd.Post{}, "defaultClient", "logger")) {
+			t.Errorf("expected post to be correctly parsed: %s", cmp.Diff(expected, p, cmpopts.IgnoreFields(xkcd.Post{}, "defaultClient", "logger")))
+		}
 	})
 
 	t.Run("invalid number", func(t *testing.T) {
@@ -57,9 +60,19 @@ func TestClient_GetPost(t *testing.T) {
 		assert.ErrorContains(t, err, "kaboom", "expected error to wrap original error")
 	})
 
+	t.Run("reading failed", func(t *testing.T) {
+		_, resp := getRandomPost(t, errors.New("i cannot read"), nil)
+		c := getClient(t, func(_ *http.Request) (*http.Response, error) {
+			return resp, nil
+		}, nil)
+		p, err := c.GetPost(context.Background(), 1)
+		assert.Nil(t, p, "expected nil post")
+		assert.Error(t, err, "expected an error")
+		assert.ErrorContains(t, err, "i cannot read", "expected error to wrap original error")
+	})
+
 	t.Run("log if closing body failed, but no error returned (defer)", func(t *testing.T) {
 		closeLogged := false
-		//nolint:bodyclose // We can ignore close
 		expected, resp := getRandomPost(
 			t,
 			nil,
@@ -80,7 +93,9 @@ func TestClient_GetPost(t *testing.T) {
 		p, err := c.GetPost(context.Background(), 1)
 		assert.NoError(t, err, "expected no error")
 		assert.NotNil(t, p, "expected non-nil post")
-		assert.EqualValues(t, expected, p, "expected post to be correctly parsed")
+		if !cmp.Equal(expected, p, cmpopts.IgnoreFields(xkcd.Post{}, "defaultClient", "logger")) {
+			t.Errorf("expected post to be correctly parsed: %s", cmp.Diff(expected, p, cmpopts.IgnoreFields(xkcd.Post{}, "defaultClient", "logger")))
+		}
 		assert.True(t, closeLogged, "expected logger to be called for a close error")
 	})
 
@@ -216,7 +231,6 @@ func TestClient_GetPost(t *testing.T) {
 		t.Run(
 			fmt.Sprintf("invalid post: %s", test.name),
 			func(t *testing.T) {
-				//nolint:bodyclose // We can ignore close
 				post, _ := getRandomPost(t, nil, nil)
 				test.preparePost(post)
 				c := getClient(t, func(_ *http.Request) (*http.Response, error) {

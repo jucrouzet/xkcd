@@ -7,6 +7,7 @@ require (
 	github.com/fatih/color v1.18.0
 	github.com/glebarez/go-sqlite v1.22.0
 	github.com/go-faker/faker/v4 v4.6.0
+	github.com/google/go-cmp v0.6.0
 	github.com/gosuri/uitable v0.0.4
 	github.com/lmittmann/tint v1.0.7
 	github.com/samber/slog-mock v0.1.0

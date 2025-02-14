@@ -8,15 +8,15 @@ import (
 
 // Client is a xkcd api client.
 type Client struct {
-	getter HTTPClient
-	logger *slog.Logger
+	defaultClient HTTPClient
+	logger        *slog.Logger
 }
 
 // New returns a new xkcd API client with the provided options.
 func New(opts ...ClientOption) *Client {
 	client := &Client{
-		getter: &http.Client{},
-		logger: slog.New(slog.NewTextHandler(nullWriter{}, nil)),
+		defaultClient: &http.Client{},
+		logger:        slog.New(slog.NewTextHandler(nullWriter{}, nil)),
 	}
 	for _, opt := range opts {
 		opt(client)
