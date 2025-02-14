@@ -48,19 +48,19 @@ var (
 )
 
 // GetLatest retrieves the latest comic post.
-func (c *Client) GetLatest(ctx context.Context, client ...Getter) (*Post, error) {
+func (c *Client) GetLatest(ctx context.Context, client ...HTTPClient) (*Post, error) {
 	return c.getPost(ctx, "https://xkcd.com/info.0.json", client...)
 }
 
 // GetPost retrieves the comic post with the given number.
-func (c *Client) GetPost(ctx context.Context, num int, client ...Getter) (*Post, error) {
+func (c *Client) GetPost(ctx context.Context, num int, client ...HTTPClient) (*Post, error) {
 	if num <= 0 {
 		return nil, ErrNoSuchPost
 	}
 	return c.getPost(ctx, fmt.Sprintf("https://xkcd.com/%d/info.0.json", num), client...)
 }
 
-func (c *Client) getPost(ctx context.Context, apiURL string, client ...Getter) (*Post, error) {
+func (c *Client) getPost(ctx context.Context, apiURL string, client ...HTTPClient) (*Post, error) {
 	logger := c.logger.With(slog.String("url", apiURL))
 	logger.Debug("fetching post")
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, apiURL, http.NoBody)

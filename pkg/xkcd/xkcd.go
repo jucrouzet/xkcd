@@ -8,7 +8,7 @@ import (
 
 // Client is a xkcd api client.
 type Client struct {
-	getter Getter
+	getter HTTPClient
 	logger *slog.Logger
 }
 
